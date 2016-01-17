@@ -98,9 +98,7 @@ public class StreamerService extends Service {
     }
 
     private void showForegroundNotification() {
-        final NotificationManager notifyManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
+        final NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         // Intent to call our activity from background.
         Intent notificationIntent = new Intent(this, MainActivity.class);
         notificationIntent.setAction(Intent.ACTION_MAIN);

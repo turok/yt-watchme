@@ -49,6 +49,7 @@ public class StreamerActivity extends Activity {
     public static final int CAMERA_WIDTH = 640;
     public static final int CAMERA_HEIGHT = 480;
     private static final int REQUEST_CAMERA_MICROPHONE = 0;
+    public static final int RECORD_LENGTH = 1;
 
     // Member variables
     private StreamerService streamerService;
@@ -171,33 +172,27 @@ public class StreamerActivity extends Activity {
 
             String cameraPermission = Manifest.permission.CAMERA;
             String microphonePermission = Manifest.permission.RECORD_AUDIO;
-            int hasCamPermission = checkSelfPermission(cameraPermission);
-            int hasMicPermission = checkSelfPermission(microphonePermission);
+            int hasCamPermission = ActivityCompat.checkSelfPermission(this, cameraPermission);
+            int hasMicPermission = ActivityCompat.checkSelfPermission(this, microphonePermission);
             List<String> permissions = new ArrayList<String>();
             if (hasCamPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(cameraPermission);
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.CAMERA)) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
                     // Provide rationale in Snackbar to request permission
-                    Snackbar.make(preview, R.string.permission_camera_rationale,
-                            Snackbar.LENGTH_INDEFINITE).show();
+                    Snackbar.make(preview, R.string.permission_camera_rationale, Snackbar.LENGTH_INDEFINITE).show();
                 } else {
                     // Explain in Snackbar to turn on permission in settings
-                    Snackbar.make(preview, R.string.permission_camera_explain,
-                            Snackbar.LENGTH_INDEFINITE).show();
+                    Snackbar.make(preview, R.string.permission_camera_explain, Snackbar.LENGTH_INDEFINITE).show();
                 }
             }
             if (hasMicPermission != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(microphonePermission);
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.RECORD_AUDIO)) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
                     // Provide rationale in Snackbar to request permission
-                    Snackbar.make(preview, R.string.permission_microphone_rationale,
-                            Snackbar.LENGTH_INDEFINITE).show();
+                    Snackbar.make(preview, R.string.permission_microphone_rationale, Snackbar.LENGTH_INDEFINITE).show();
                 } else {
                     // Explain in Snackbar to turn on permission in settings
-                    Snackbar.make(preview, R.string.permission_microphone_explain,
-                            Snackbar.LENGTH_INDEFINITE).show();
+                    Snackbar.make(preview, R.string.permission_microphone_explain, Snackbar.LENGTH_INDEFINITE).show();
                 }
             }
             if (!permissions.isEmpty()) {
@@ -228,8 +223,7 @@ public class StreamerActivity extends Activity {
                     streamerService.startStreaming(rtmpUrl);
                 } else {
                     Log.i(MainActivity.APP_NAME, "Camera with mic permissions were NOT granted.");
-                    Snackbar.make(preview, R.string.permissions_not_granted,
-                            Snackbar.LENGTH_SHORT)
+                    Snackbar.make(preview, R.string.permissions_not_granted, Snackbar.LENGTH_SHORT)
                             .show();
                 }
                 break;
