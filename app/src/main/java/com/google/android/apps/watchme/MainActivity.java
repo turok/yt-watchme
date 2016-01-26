@@ -103,8 +103,7 @@ public class MainActivity extends Activity implements
 
         new StartEventTask().execute(broadcastId);
 
-        Intent intent = new Intent(getApplicationContext(),
-                StreamerActivity.class);
+        Intent intent = new Intent(getApplicationContext(), StreamerActivity.class);
         intent.putExtra(YouTubeApi.RTMP_URL_KEY, event.getIngestionAddress());
         intent.putExtra(YouTubeApi.BROADCAST_ID_KEY, broadcastId);
 

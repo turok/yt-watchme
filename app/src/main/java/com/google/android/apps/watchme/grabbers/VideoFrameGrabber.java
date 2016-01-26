@@ -15,6 +15,7 @@
 package com.google.android.apps.watchme.grabbers;
 
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.media.AudioRecord;
@@ -23,6 +24,8 @@ import android.util.Log;
 import com.google.android.apps.watchme.StreamerActivity;
 
 import org.bytedeco.javacpp.avcodec;
+import org.bytedeco.javacpp.avutil;
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameRecorder;
@@ -40,23 +43,17 @@ public class VideoFrameGrabber {
     private boolean recording;
     private Camera camera;
     private FFmpegFrameRecorder recorder;
-    private Frame[] images;
     private int frameRate = 30;
     private int imagesIndex;
     private Frame yuvImage = null;
     private long[] timestamps;
     private long startTime = 0;
+    private long videoTimestamp;
 
     public VideoFrameGrabber() {
-        imagesIndex = 0;
-        images = new Frame[StreamerActivity.RECORD_LENGTH * 2];
-        timestamps = new long[images.length];
-        for (int i = 0; i < images.length; i++) {
-            Log.i(LOG_TAG, String.format("create image i = %d", i));
-            images[i] = new Frame(StreamerActivity.CAMERA_WIDTH, StreamerActivity.CAMERA_HEIGHT, Frame.DEPTH_UBYTE, 16);
-            timestamps[i] = -1;
-        }
-        recording = true;
+        yuvImage = new Frame(StreamerActivity.CAMERA_WIDTH, StreamerActivity.CAMERA_HEIGHT, Frame.DEPTH_UBYTE, 2);
+//        yuvImage.imageChannels = 2;
+        recording = false;
     }
 
     public FFmpegFrameRecorder getRecorder() {
@@ -73,34 +70,25 @@ public class VideoFrameGrabber {
     public Size start(Camera camera, String url) {
         this.camera = camera;
         this.startTime = System.currentTimeMillis();
+        recording = true;
 
         Camera.Parameters params = camera.getParameters();
         params.setPreviewSize(StreamerActivity.CAMERA_WIDTH, StreamerActivity.CAMERA_HEIGHT);
         camera.setParameters(params);
         Size previewSize = params.getPreviewSize();
         int bufferSize = previewSize.width * previewSize.height * ImageFormat.getBitsPerPixel(params.getPreviewFormat());
-        camera.addCallbackBuffer(new byte[bufferSize]);
-
-        camera.setPreviewCallbackWithBuffer(new Camera.PreviewCallback() {
+//        camera.addCallbackBuffer(new byte[bufferSize]);
+        camera.setPreviewCallback(new Camera.PreviewCallback() {
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-//                if (audioRecord == null || audioRecord.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) {
-//                    startTime = System.currentTimeMillis();
-//                    return;
-//                }
-                int i = imagesIndex++ % images.length;
-                yuvImage = images[i];
-                Log.i(LOG_TAG, String.format("i = %d, imagesIndex = %d", i, imagesIndex));
-                timestamps[i] = 1000 * (System.currentTimeMillis() - startTime);
                 if (yuvImage != null && recording) {
+                    videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
                     ((ByteBuffer)yuvImage.image[0].position(0)).put(data);
+
                     try {
-                        Log.i(LOG_TAG,"Writing Frame");
-                        long t = 1000 * (System.currentTimeMillis() - startTime);
-                        if (t > recorder.getTimestamp()) {
-                            recorder.setTimestamp(t);
-                        }
+                        recorder.setTimestamp(videoTimestamp);
                         recorder.record(yuvImage);
+
                     } catch (FFmpegFrameRecorder.Exception e) {
                         Log.v(LOG_TAG,e.getMessage());
                         e.printStackTrace();
@@ -108,18 +96,32 @@ public class VideoFrameGrabber {
                 }
             }
         });
+
         recorder = new FFmpegFrameRecorder(url, previewSize.width, previewSize.height, 1);
         recorder.setFormat("flv");
         recorder.setSampleRate(44100);
         recorder.setVideoCodec(avcodec.AV_CODEC_ID_H264);
+        recorder.setVideoCodecName("libx264");
+        Log.v(LOG_TAG, String.format("Codec after is %s", recorder.getVideoCodecName()));
         recorder.setVideoOption("preset", "ultrafast");
         recorder.setFrameRate(frameRate);
         recorder.setAudioCodec(avcodec.AV_CODEC_ID_AAC);
+        Log.v(LOG_TAG, String.format("Audi codec is %s", recorder.getAudioCodecName()));
+        recorder.setAudioCodecName("libfdk_aac");
+        Log.v(LOG_TAG, String.format("Audi codec after is %s", recorder.getAudioCodecName()));
         recorder.setAudioBitrate(128000);
+        recorder.setVideoBitrate(1500000);
+        recorder.setVideoQuality(0.5);
+        recorder.setGopSize(12);
+        recorder.setVideoOption("partitions", "i8x8,i4x4,p8x8,b8x8");
+        recorder.setVideoOption("direct-pred", "1");
+        recorder.setVideoOption("weightb", "0");
         try {
             recorder.start();
+            Log.v(LOG_TAG, String.format("Codec is %d %s", recorder.getVideoCodec(), recorder.getVideoCodecName()));
+            Log.v(LOG_TAG, String.format("Audio is %d %s", recorder.getAudioCodec(), recorder.getAudioCodecName()));
         } catch (FrameRecorder.Exception e) {
-            Log.i(VideoFrameGrabber.class.getName(), e.getMessage());
+            Log.v(VideoFrameGrabber.class.getName(), e.getMessage());
         }
 
         return previewSize;

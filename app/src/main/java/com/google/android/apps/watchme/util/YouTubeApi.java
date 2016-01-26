@@ -42,7 +42,7 @@ import java.util.TimeZone;
 
 public class YouTubeApi {
 
-    public static final String RTMP_URL_KEY = "rtmpUrl";
+    public static final String RTMP_URL_KEY = "AIzaSyCC-P_zvsUaiZWyrt_gyNro54OT-NYO82Q";
     public static final String BROADCAST_ID_KEY = "broadcastId";
     private static final int FUTURE_DATE_OFFSET_MILLIS = 5 * 1000;
 
@@ -51,8 +51,7 @@ public class YouTubeApi {
         // We need a date that's in the proper ISO format and is in the future,
         // since the API won't
         // create events that start in the past.
-        SimpleDateFormat dateFormat = new SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss'Z'");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         long futureDateMillis = System.currentTimeMillis()
                 + FUTURE_DATE_OFFSET_MILLIS;
@@ -100,7 +99,7 @@ public class YouTubeApi {
             // Create content distribution network with format and ingestion
             // type.
             CdnSettings cdn = new CdnSettings();
-            cdn.setFormat("240p");
+            cdn.setFormat("720p");
             cdn.setIngestionType("rtmp");
 
             LiveStream stream = new LiveStream();
@@ -173,31 +172,27 @@ public class YouTubeApi {
         return resultList;
     }
 
-    public static void startEvent(YouTube youtube, String broadcastId)
-            throws IOException {
+    public static void startEvent(YouTube youtube, String broadcastId) throws IOException {
 
         try {
-            Thread.sleep(10000);
+            Thread.sleep(60000);
         } catch (InterruptedException e) {
             Log.e(MainActivity.APP_NAME, "", e);
         }
 
-        Transition transitionRequest = youtube.liveBroadcasts().transition(
-                "live", broadcastId, "status");
+        Transition transitionRequest = youtube.liveBroadcasts().transition("live", broadcastId, "status");
         transitionRequest.execute();
     }
 
     public static void endEvent(YouTube youtube, String broadcastId)
             throws IOException {
-        Transition transitionRequest = youtube.liveBroadcasts().transition(
-                "completed", broadcastId, "status");
+        Transition transitionRequest = youtube.liveBroadcasts().transition("complete", broadcastId, "status");
         transitionRequest.execute();
     }
 
     public static String getIngestionAddress(YouTube youtube, String streamId)
             throws IOException {
-        YouTube.LiveStreams.List liveStreamRequest = youtube.liveStreams()
-                .list("cdn");
+        YouTube.LiveStreams.List liveStreamRequest = youtube.liveStreams().list("cdn");
         liveStreamRequest.setId(streamId);
         LiveStreamListResponse returnedStream = liveStreamRequest.execute();
 
